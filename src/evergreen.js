@@ -25,16 +25,13 @@ let rulesMap = {
     "Paragon Limit": "ParagonLimitIcon"
 }
 
-
-loadSettings();
-
 let backQueue = [];
-let backButton = createEl('img', { src: '../Assets/UI/BackBtn.png', classList: ['back-button', 'pointer'] });
+/*let backButton = createEl('img', { src: './Assets/UI/BackBtn.png', classList: ['back-button', 'pointer'] });
 backButton.addEventListener('click', () => {
     goBack();
 })
 document.querySelector('.header').prepend(backButton);
-
+*/
 function goBack(noScroll){
     let currentState = backQueue.pop();
     if (currentState.source) {
@@ -48,7 +45,7 @@ function goBack(noScroll){
     }
 
     if (backQueue.length === 0) {
-        backButton.classList.remove('visible');
+        //backButton.classList.remove('visible');
     }
     if (!noScroll) {
         resetScroll();
@@ -58,12 +55,12 @@ function goBack(noScroll){
 
 function addToBackQueue(object) {
     backQueue.push(object);
-    backButton.classList.add('visible');
+    //backButton.classList.add('visible');
 }
 
 function clearBackQueue() {
     backQueue = [];
-    backButton.classList.remove('visible');
+    //backButton.classList.remove('visible');
 }
 
 function createEl(tag, options = {}) {
@@ -202,35 +199,12 @@ function fetchLocKeys() {
     })
 }
 
-async function fetchRogueDependencies() {
-    await fetchLocKeys();
-    return fetch('./data/rogueData.json')
-        .then(response => response.json())
-        .then(data => {
-            rogueJSON = data;
-            postProcessRogueData();
-        })
-        .catch(error => {
-            console.error('Error:', error);
-            errorModal(error, "js");
-        });
-}
-
-async function fetchInstaDependencies() {
-    await fetchLocKeys();
-    generateInstaData();
-    changeProgressTab('InstaMonkeysUsable')
-    clearBackQueue();
-    hideLoading();
-}
-
 async function fetchMainDependencies() {
     if (!Object.keys(constants.heroesInOrder).includes(btd6usersave.primaryHero)) {
         btd6usersave.primaryHero = Object.keys(constants.heroesInOrder)[0];
     }
 
     await fetchLocKeys();
-    await fetchRogueDependencies();
     Promise.all([
         fetch('./data/Achievements.json').then(response => response.json()),
         fetch('./data/trophyStoreItems.json').then(response => response.json()),
@@ -242,7 +216,6 @@ async function fetchMainDependencies() {
         teamsStoreItemsJSON = teamsStoreItems;
         readyFlags[2] = 1;
         readyFlags[3] = 1;
-        loadSettings();
         generateIfReady();
     })
     .catch(error => {
@@ -256,137 +229,6 @@ async function fetchMainDependencies() {
 function resetScroll() {
     document.body.scrollTop = 0;
     document.documentElement.scrollTop = 0;
-}
-
-function loadSettings() {
-    let settings = JSON.parse(localStorage.getItem("BTD6OAKSettings"));
-    if (settings) {
-        if (settings.hasOwnProperty("ProfileLoading")) { preventRateLimiting = settings.ProfileLoading };
-        if (settings.hasOwnProperty("UseNamedMonkeys")) { useNamedMonkeys = settings.UseNamedMonkeys };
-        if (settings.hasOwnProperty("TeamsStoreItems")) { showTeamsItems = settings.TeamsStoreItems };
-        if (settings.hasOwnProperty("ShowHiddenTrophyItems")) { trophyStoreShowHidden = settings.ShowHiddenTrophyItems };
-        if (settings.hasOwnProperty("seenFTMessages")) { seenFTMessages = settings.seenFTMessages };
-    }
-}
-
-function saveSettings() {
-    let settings = {
-        "ProfileLoading": preventRateLimiting,
-        "UseNamedMonkeys": useNamedMonkeys,
-        "TeamsStoreItems": showTeamsItems,
-        "ShowHiddenTrophyItems": trophyStoreShowHidden,
-        "seenFTMessages": seenFTMessages
-    }
-    localStorage.setItem("BTD6OAKSettings", JSON.stringify(settings));
-}
-
-function generateAvatar(size, src) {
-    let avatar = document.createElement('div');
-    avatar.style.width = `${size}px`;
-    avatar.style.height = `${size}px`;
-    avatar.classList.add('avatar');
-
-    let avatarFrame = document.createElement('img');
-    avatarFrame.classList.add('avatar-frame', 'noSelect');
-    avatarFrame.style.width = `${size}px`;
-    avatarFrame.src = '../Assets/UI/InstaTowersContainer.png';
-    avatar.appendChild(avatarFrame);
-
-    let avatarImg = document.createElement('img');
-    avatarImg.classList.add('avatar-img', 'noSelect');
-    avatarImg.style.width = `${size}px`;
-    avatarImg.src = src;
-    avatar.appendChild(avatarImg);
-    return avatar;
-}
-
-function openBTD6Link(link){
-    window.location.href = link;
-}
-
-function openBTD6Site(link) {
-    window.open(link, "_blank");
-}
-
-function copyLoadingIcon(destination){
-    let clone = document.getElementsByClassName('loading-icon')[0].cloneNode(true)
-    clone.classList.add('loading-icon-leaderboard');
-    clone.style.height = "unset"
-    destination.appendChild(clone)
-
-    return clone;
-}
-
-function formatTime(seconds) {
-    const hours = Math.floor(seconds / 3600);
-    const minutes = Math.floor((seconds % 3600) / 60);
-    const secs = Math.floor(seconds % 60);
-    return [hours, minutes, secs].map(v => v < 10 ? "0" + v : v).join(":");
-}
-
-function formatScoreTime(milliseconds) {
-    let totalSeconds = Math.floor(milliseconds / 1000);
-    let remainingMilliseconds = milliseconds % 1000;
-    let hours = Math.floor(totalSeconds / 3600);
-    totalSeconds = totalSeconds % 3600;
-    let minutes = Math.floor(totalSeconds / 60);
-    let seconds = totalSeconds % 60;
-
-    minutes = minutes.toString().padStart(2, '0');
-    seconds = seconds.toString().padStart(2, '0');
-    remainingMilliseconds = Math.floor(remainingMilliseconds / 10).toString().padStart(2, '0');
-
-    let timeString = `${minutes}:${seconds}.${remainingMilliseconds}`;
-    if (hours > 0) {
-        hours = hours.toString().padStart(2, '0');
-        timeString = `${hours}:${timeString}`;
-    }
-
-    return timeString;
-}
-
-function getRemainingTime(targetTime) {
-    const now = new Date();
-    const remainingTime = (targetTime - now) / 1000;
-    return remainingTime;
-}
-
-function updateTimer(targetTime, elementId, finishedText = "Finished") {
-    const timerElement = document.getElementById(elementId);
-    if (!timerElement) return 'missing';
-
-    const remainingTime = getRemainingTime(targetTime);
-    if (remainingTime > 48 * 3600) {
-        const days = Math.floor(remainingTime / (24 * 3600));
-        timerElement.textContent = `${days} days left`;
-        timerElement.style.width = days > 9 ? "140px" : "130px";
-    } else if (remainingTime < 0) {
-        timerElement.textContent = finishedText;
-        timerElement.style.textAlign = "right";
-        return 'finished';
-    } else {
-        timerElement.style.width = "100px";
-        timerElement.textContent = formatTime(remainingTime);
-    }
-}
-
-function relativeTime(current, previous) {
-    const units = [
-        { name: "year", ms: 365 * 24 * 60 * 60 * 1000 },
-        { name: "month", ms: 30 * 24 * 60 * 60 * 1000 },
-        { name: "day", ms: 24 * 60 * 60 * 1000 },
-        { name: "hour", ms: 60 * 60 * 1000 },
-        { name: "minute", ms: 60 * 1000 },
-        { name: "second", ms: 1000 }
-    ];
-
-    const elapsed = current - previous;
-
-    for (const unit of units) {
-        if (elapsed < unit.ms) continue;
-        let time = Math.round(elapsed / unit.ms);
-        return `${time} ${unit.name}${time > 1 ? 's' : ''} ago`;
-    }
 }
 
 function changeHexBGColor(color){
@@ -418,254 +260,25 @@ function ratioCalc(unknown, x1, x2, y1, y2){
     }
 }
 
-function processRewards(input){
-    let result = {};
-    let rewards = (typeof(input) == "string") ? input.split("#") : input;
-    let counter = 0;
-    for (let reward of rewards) {
-        result[counter] = {};
-        let rewardData = reward.split(":");
-        let rewardType = rewardData[0];
-        if (!["MonkeyMoney","Power","InstaMonkey","KnowledgePoints","RandomInstaMonkey","Trophy","CollectionEvent"].includes(rewardType)) {
-            result[counter].type = "Other";
-            result[counter].value = rewardType;
-            counter++;
-            continue;
-        }
-        let params = rewardData[1].split(",");
-        switch (rewardType) {
-            case "MonkeyMoney":
-                result[counter].type = "MonkeyMoney";
-                result[counter].amount = parseInt(params[0]);
-                break;
-            case "Power":
-                result[counter].type = "Power";
-                result[counter].power = params[0];
-                result[counter].amount = parseInt(params[1]);
-                if(params[1] == null) { result[counter].amount = 1;}
-                break;
-            case "InstaMonkey":
-                result[counter].type = "InstaMonkey";
-                result[counter].tower = params[0];
-                result[counter].tiers = params[1];
-                break;
-            case "KnowledgePoints":
-                result[counter].type = "KnowledgePoints";
-                result[counter].amount = parseInt(params[0]);
-                break;
-            case "RandomInstaMonkey":
-                result[counter].type = "RandomInstaMonkey";
-                result[counter].tier = params[0];
-                result[counter].amount = parseInt(params[1]);
-                break;
-            case "Trophy":
-                result[counter].type = "Trophy";
-                result[counter].amount = params[0];
-                break;
-            case "CollectionEvent":
-                result[counter].type = "CollectionEvent";
-                result[counter].amount = params[0];
-                break;
-        }
-        counter++;
-    }
-    return result;
-}
-
 function generateLoginDiv(callback, loginCallback) {
-    let loginDiv = createEl('div', { classList: ['d-flex', 'ai-center', 'jc-center', 'fd-column', 'bg-color-primary'] });
-    
-    let loginTitle = createEl('p', { classList: ['site-info-header', 'black-outline'], innerHTML: 'Login with your OAK Token!' });
-    loginDiv.appendChild(loginTitle);
-    
-    const previousOAK = createEl('div');
-    Object.entries(localStorageOAK).forEach(([oak, oakdata]) => {
-        const entry = createEl('div', {
-            classList: ['previous-oak-entry', 'd-flex', 'ai-center', 'ps-relative'],
-            style: { backgroundImage: `linear-gradient(to right, transparent 80%, var(--profile-primary) 100%),url(${oakdata.banner})` }
-        });
-        entry.appendChild(generateAvatar(100, oakdata.avatar));
-        entry.appendChild(createEl('p', { classList: ['profile-name', 'tc-white', 'font-luckiest', 'black-outline'], innerHTML: oakdata.displayName }));
-        const useBtn = createEl('img', { classList: ['use-button', 'ps-absolute'], src: './Assets/UI/ContinueBtn.png' });
-        useBtn.addEventListener('click', async () => {
-            document.getElementById("loading").style.removeProperty("transform");
-            oak_token = oak;
-            if (loginCallback) {
-                await loginCallback(oak);
-            } else {
-                await getSaveData(oak);
-                loggedIn = true;
-            }
-            if(callback) {
-                callback(oak_token);
-            } else {
-                fetchMainDependencies();
-            }
-        });
-        entry.appendChild(useBtn);
-        const delBtn = createEl('img', { classList: ['delete-button', 'ps-absolute'], src: './Assets/UI/CloseBtn.png' });
-        delBtn.addEventListener('click', () => {
-            delete localStorageOAK[oak];
-            writeLocalStorage();
-            previousOAK.removeChild(entry);
-        });
-        entry.appendChild(delBtn);
-        previousOAK.appendChild(entry);
-    });
-    loginDiv.appendChild(previousOAK)
-
-    let siteAccessDiv = document.createElement('div');
-    siteAccessDiv.classList.add('site-access-div');
-    loginDiv.appendChild(siteAccessDiv);
-
-    // let siteLoginButtons = document.createElement('div');
-    // siteLoginButtons.classList.add('site-login-buttons');
-    // siteAccessDiv.appendChild(siteLoginButtons);
-
-    // let previewButton = document.createElement('p');
-    // previewButton.classList.add('site-access-button','black-outline');
-    // previewButton.innerHTML = 'Preview Site';
-    // previewButton.addEventListener('click', () => {
-    //     trailerVideo.pause();
-    //     previewSite();
-    // })
-    // siteLoginButtons.appendChild(previewButton);
-
-    // let challengeSelectorOR = document.createElement('p');
-    // challengeSelectorOR.classList.add("challenge-selector-or", "black-outline");
-    // challengeSelectorOR.innerHTML = "OR";
-    // siteLoginButtons.appendChild(challengeSelectorOR);
-
-    // let loginButton = document.createElement('p');
-    // loginButton.classList.add('site-access-button','black-outline');
-    // loginButton.innerHTML = 'Login With OAK';
-    // loginButton.addEventListener('click', () => {
-    //     document.querySelector('.oak-entry-div').style.display = 'flex';
-    //     siteLoginButtons.style.display = 'none';
-    // })
-    // siteLoginButtons.appendChild(loginButton);
-
-    let oakEntryDiv = document.createElement('div');
-    oakEntryDiv.classList.add('oak-entry-div');
-    // oakEntryDiv.style.display = 'none';
-    loginDiv.appendChild(oakEntryDiv);
-    
-    let keyEntry = document.createElement('input');
-    keyEntry.classList.add('key-entry');
-    keyEntry.placeholder = 'Enter your OAK here';
-    oakEntryDiv.appendChild(keyEntry);
-    
-    let startButton = document.createElement('div');
-    startButton.classList.add('start-button','black-outline');
-    startButton.innerHTML = 'Start';
-    startButton.addEventListener('click', async () => {
-        let key = keyEntry.value;
-        if (key.length < 5 || key.length > 30 || !key.startsWith('oak_')){
-            errorModal('Please enter a valid OAK! This will start with "oak_".');
-            return;
-        }
+    async function autoStart() {
         document.getElementById("loading").style.removeProperty("transform");
-        oak_token = keyEntry.value;
+        oak_token = 'oak_9e456ba4b9aeaf59d83c';
+    
         if (loginCallback) {
             await loginCallback(oak_token);
         } else {
             await getSaveData(oak_token);
             loggedIn = true;
         }
-        if(callback) {
+    
+        if (callback) {
             callback(oak_token);
         } else {
             fetchMainDependencies();
         }
-    })
-    oakEntryDiv.appendChild(startButton);
-
-    let getOakDiv = document.createElement('div');
-    getOakDiv.classList.add('get-oak-div');
-    loginDiv.appendChild(getOakDiv);
-
-    let whereText = document.createElement('p');
-    whereText.classList.add('where-text');
-    whereText.innerHTML = 'Don\'t have an OAK token? Read here:';
-    getOakDiv.appendChild(whereText);
-
-    let whereButton = document.createElement('p');
-    whereButton.classList.add('where-button','black-outline');
-    whereButton.style.width = "220px";
-    whereButton.innerHTML = 'View OAK Guide';
-    whereButton.addEventListener('click', () => {
-        openOAKInstructionsModal();
-    })
-    getOakDiv.appendChild(whereButton);
-
-    let OAKInstructionsDiv = document.createElement('div');
-    OAKInstructionsDiv.id = 'oak-instructions-div';
-    OAKInstructionsDiv.classList.add('oak-instructions-div');
-    OAKInstructionsDiv.style.display = 'none';
-    loginDiv.appendChild(OAKInstructionsDiv);
-
-    return loginDiv;
-}
-
-function openOAKInstructionsModal(){
-    let OAKInstructionsDiv = createEl('div', { style: {
-        padding: '10px'
-    }});
-    OAKInstructionsDiv.appendChild(createEl('p', {
-        classList: ['oak-instructions-header', 'black-outline'],
-        innerHTML: 'What is an Open Access Key?'
-    }));
-
-    OAKInstructionsDiv.appendChild(createEl('p', {
-        classList: ['oak-instructions-text'],
-        innerHTML: 'An Open Access Key (OAK) is a unique key that allows you to access your Bloons TD 6 data from Ninja Kiwi\'s Open Data API. The site will use this to fetch your information from the API to be displayed in a familiar way. <br><br>NOTE: Progress tracking is not available for the following: Epic Games Store (PC), BTD6+ on Apple Arcade and BTD6 Netflix as OAK tokens are unavailable.'
-    }));
-
-    OAKInstructionsDiv.appendChild(createEl('p', {
-        classList: ['oak-instructions-text'],
-        innerHTML: 'You can read more about the Open Data API here: <a href="https://ninja.kiwi/opendatafaq" target="_blank", style="color:white";>Open Data API Article</a>'
-    }));
-
-    OAKInstructionsDiv.appendChild(createEl('p', {
-        classList: ['oak-instructions-header', 'black-outline'],
-        innerHTML: 'How do I get one?'
-    }));
-
-    OAKInstructionsDiv.appendChild(createEl('p', {
-        classList: ['oak-instructions-text'],
-        innerHTML: 'Step 1: Login and Backup your progress with a Ninja Kiwi Account in BTD6. You can do this by going to settings from the main menu and clicking on the Account button.'
-    }));
-
-    OAKInstructionsDiv.appendChild(createEl('img', {
-        classList: ['oak-instruction-img'],
-        src: './Assets/UI/OAKTutorial1.jpg'
-    }));
-
-    OAKInstructionsDiv.appendChild(createEl('p', {
-        classList: ['oak-instructions-text'],
-        innerHTML: 'Step 2: Select "Open Data API" at the bottom right of the account screen.'
-    }));
-
-    OAKInstructionsDiv.appendChild(createEl('img', {
-        classList: ['oak-instruction-img'],
-        src: './Assets/UI/OAKTutorial2.jpg'
-    }));
-
-    OAKInstructionsDiv.appendChild(createEl('p', {
-        classList: ['oak-instructions-text'],
-        innerHTML: 'Step 3: Generate a key and copy that in to the text field on the page. It should start with "oak_". Then click "Start" to login!'
-    }));
-
-    OAKInstructionsDiv.appendChild(createEl('p', {
-        classList: ['oak-instructions-text'],
-        innerHTML: 'Privacy Note: This site does not store any data being sent to or retrieved from Ninja Kiwi\'s Open Data API outside of your browser/device. The localStorage browser feature is used to prevent users from having to re-enter their OAK token every time they visit the site. If you would like to delete this stored data, you can do so by clicking the "X" on the profile you would like to delete on this homepage or clearing your browsing data.'
-    }));
-    createModal({
-        header: 'OAK Instructions',
-        content: OAKInstructionsDiv,
-    });
-    return OAKInstructionsDiv;
-    
+    }
+    autoStart();
 }
 
 function errorModal(body, source, force) {
@@ -762,196 +375,4 @@ function errorModal(body, source, force) {
     })
     modalContent.appendChild(modalClose);
     isErrorModalOpen = true;
-}
-
-const rtf = new Intl.RelativeTimeFormat("en", { style: "long" });
-function getRelativeTimeString(targetTime) {
-    const now = Date.now();
-    const diffMs = targetTime - now;
-    const absDiffMs = Math.abs(diffMs);
-
-    const minute = 60 * 1000;
-    const hour = 60 * minute;
-    const day = 24 * hour;
-
-    let value, unit;
-
-    if (absDiffMs >= day) {
-        value = Math.round(diffMs / day);
-        unit = 'day';
-    } else if (absDiffMs >= hour) {
-        value = Math.round(diffMs / hour);
-        unit = 'hour';
-    } else {
-        value = Math.round(diffMs / minute);
-        unit = 'minute';
-    }
-
-    return rtf.format(value, unit);
-}
-
-function registerTimer(elementId, targetTime){
-    if(!(targetTime instanceof Date)) {
-        targetTime = new Date(targetTime);
-    }
-    activeTimers.set(elementId, targetTime);
-    ensureTimerLoop();
-    updateTimer(targetTime, elementId);
-}
-
-function ensureTimerLoop(){
-    if (timerInterval != null) return;
-    timerInterval = setInterval(() => {
-        if (activeTimers.size === 0){
-            clearInterval(timerInterval);
-            timerInterval = null;
-            return;
-        }
-        for (let [id, target] of activeTimers){
-            const status = updateTimer(target, id);
-            if (status === 'missing' || status === 'finished'){
-                activeTimers.delete(id);
-            }
-        }
-    }, 1000);
-}
-
-function clearAllTimers(){
-    activeTimers.clear();
-    if (timerInterval){
-        clearInterval(timerInterval);
-        timerInterval = null;
-    }
-}
-
-function generateComment(text, callback) {
-    let commentDiv = createEl('div', {
-        classList: ['round-hint-div','coop-border']
-    });
-
-    let closeBtn = createEl('p', {
-        classList: ['round-hint-x', 'white-outline'],
-        innerHTML: 'X'
-    });
-    closeBtn.addEventListener('click', () => {
-        commentDiv.style.display = "none";
-        if (callback) {
-            callback();
-        }   
-    })
-    commentDiv.appendChild(closeBtn);
-
-    let commentText = createEl('p', {
-        classList: ['round-hint'],
-        innerHTML: text
-    });
-    commentDiv.appendChild(commentText);
-
-    return commentDiv;
-}
-
-function preloadImage(url) {
-    let forceLoad = new Image();
-    forceLoad.src = url
-    return url;
-}
-
-function collapsableDiv(headerText, options = {}) {
-    let container = createEl('div', { 
-        classList: ['w-100'],
-        style: {
-            backgroundColor: "rgba(0,0,0,0.1)",
-            borderRadius: "10px",
-        }
-    });
-
-    let header = createEl('div', {
-        classList: ['pointer', 'd-flex', 'jc-between', 'ai-center'],
-        style: {
-            backgroundColor: "var(--profile-tertiary)",
-            padding: "10px",
-            borderRadius: "10px",
-        }
-    });
-    container.appendChild(header);
-
-    let headerLabel = createEl('p', {
-        classList: ['black-outline'],
-        style: {
-            fontSize: "24px",
-        },
-        innerHTML: headerText
-    });
-    header.appendChild(headerLabel);
-
-    let arrow = createEl('img', {
-        classList: ['of-contain'],
-        style: {
-            width: "30px",
-            transform: 'rotate(90deg)'
-        },
-        src: './Assets/UI/NextArrowSmallYellow.png'
-    });
-    header.appendChild(arrow);
-
-    let content = createEl('div', {
-        classList: options.classList ? options.classList : [],
-        style: options.style ? options.style : {}
-    });
-    container.appendChild(content);
-
-    header.addEventListener('click', () => {
-        if (content.style.display === 'none') {
-            content.style.display = 'flex';
-            arrow.style.transform = 'rotate(90deg)';
-        } else {
-            content.style.display = 'none';
-            arrow.style.transform = 'rotate(270deg)';
-        }
-    });
-    if (options.collapse) {
-        header.click();
-    }
-    return {container, header, content, arrow};
-}
-
-function addTooltip(element, content, options = {}) {
-    tippy(element, {
-        content: content,
-        placement: 'top',
-        theme: 'speech_bubble',
-        allowHTML: options.allowHTML || false,
-        hideOnClick: options.hasOwnProperty("hideOnClick") ? options.hideOnClick : true,
-        zIndex: options.zIndex || 9999,
-        touch: options.hasOwnProperty("touch") ? options.touch : true,
-        popperOptions: {
-            modifiers: [
-                {
-                name: 'preventOverflow',
-                options: {
-                    boundary: 'viewport',
-                    padding: {right: 18},
-                },
-                },
-            ],
-        }
-    })
-}
-
-function getHeroOrSkinData(typeName) {
-    return constants.heroesInOrder.hasOwnProperty(typeName) 
-    ? constants.heroesInOrder[typeName] : constants.heroSkins.hasOwnProperty(typeName) 
-    ? constants.heroSkins[typeName] : constants.heroSkins.hasOwnProperty(saveSkintoSkinMap[typeName]) 
-    ? constants.heroSkins[saveSkintoSkinMap[typeName]] : constants.heroSkins.hasOwnProperty(saveSkinToSkinMapReversed[typeName])
-    ? constants.heroSkins[saveSkinToSkinMapReversed[typeName]]  : null;
-}
-
-function getQuestPartLabel(roundsetName, partIndex) {
-    let keyword = "Part"
-    if (roundsetName.includes("Stage")) {
-        keyword = "Stage"
-    } else if (roundsetName.includes("Act")) {
-        keyword = "Act"
-    }
-    return `${keyword} ${partIndex}`;
 }

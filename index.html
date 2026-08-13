@@ -5,6 +5,7 @@
     <title>BTD6 API Explorer</title>
     <meta name="viewport" content="width=800">
     <meta name="description" content="A fanmade viewer of the Ninja Kiwi Open Data API for all things Bloons TD 6. View your profile stats, events, leaderboards, and more!">
+    <link rel="icon" type="image/x-icon" href="./favicon.ico">
     <link rel="apple-touch-icon" href="./Assets/UI/SiteBtn.png">
     <link rel="stylesheet" href="./src/reset.css">
     <link rel="stylesheet" href="./src/style.css">
@@ -35,7 +36,7 @@
         }
 
         .loading-glow {
-            background-image: url(../Assets/UI/GlowLoadCircle.png);
+            background-image: url(./Assets/UI/GlowLoadCircle.png);
             background-size: contain;
             position: absolute;
             width: 10vh;
@@ -48,7 +49,7 @@
         }
 
         .loading-container {
-            background-image: url(../Assets/UI/UpgradeContainerTier5.png);
+            background-image: url(./Assets/UI/UpgradeContainerTier5.png);
             background-size: contain;
             position: absolute;
             width: 10vh;
@@ -220,7 +221,7 @@
         <div class="loading-icon">
             <!-- <div class="loading-glow"></div> -->
             <div class="loading-container"></div>
-            <img class="loading-head" src="../Assets/UI/UpgradeContainerTier5LockedHead.png">
+            <img class="loading-head" src="./Assets/UI/UpgradeContainerTier5LockedHead.png">
             <p class="loading-text">LOADING...</p>
         </div>
     </div>
@@ -231,29 +232,7 @@
         <div class="header-container"></div>
     </div>
     <div class="content">
-        <div id="home-content" class="front-page" style="display: none;"></div>
-        <div id="overview-content" class="content-div overview" style="display: none;"></div>
         <div id="profile-content" class="content-div progress" style="display: none;"></div>
-        <div id="events-content" class="content-div events" style="display: none;"></div>
-        <div id="explore-content" class="content-div explore" style="display: none;"></div>
-        <div id="extras-content" class="content-div extras" style="display: none;"></div>
-        <div id="challenge-content" class="sub-content-div challenge" style="display: none;"></div>
-        <div id="map-content" class="sub-content-div map" style="display: none;"></div>
-        <div id="publicprofile-content" class="sub-content-div publicprofile" style="display: none;"></div>
-        <div id="leaderboards-content" class="content-div extras" style="display: none;"></div>
-        <div id="leaderboard-content" class="sub-content-div leaderboard" style="display: none;"></div>
-        <div id="browser-content" class="sub-content-div browser" style="display: none;"></div>
-        <div id="relics-content" class="sub-content-div relics fd-column" style="display: none;"></div>
-        <div id="ct-map-content" class="sub-content-div relics fd-column" style="display: none;"></div>
-        <div id="rounds-content" class="content-div roundset ai-center" style="display: none;"></div>
-        <div id="roundsets-content" class="rounds-content roundset" style="display: none;"></div>
-        <div id="rogue-content" class="content-div extras" style="display: none;"></div>
-        <div id="artifacts-content" class="content-div extras" style="display: none;"></div>
-        <div id="starter-kits-content" class="content-div extras" style="display: none;"></div>
-        <div id="featured-content" class="content-div extras" style="display: none;"></div>
-    </div>
-    <div id="rogue-image-wrapper" class="rogue-image-wrapper" style="overflow: hidden;">
-        <div id="rogue-image-content" class="rogue-image-content" style="display: none; opacity: 0;"></div>
     </div>
 </body>
 <script src="./src/html-to-image.min.js"></script>
@@ -262,15 +241,8 @@
 <script src="./src/evergreen.js"></script>
 <script src="./src/nkapi.js"></script>
 <script src="./src/btd6-ui.js"></script>
-<script src="./src/publicprofile.js"></script>
-<script src="./src/leaderboard.js"></script>
-<script src="./src/rounds.js"></script>
-<script src="./src/rogue.js"></script>
-<script src="./src/ct.js"></script>
-<script src="./src/collection.js"></script>
 <script src="./src/main.js"></script>
 <script src="./src/asset.js"></script>
-<script src="./src/roundpreview.js"></script>
 <script>
     document.getElementById("loading").style.transform = "scale(0)";
     document.documentElement.style.setProperty('--vh', `${window.innerHeight * 0.01}px`);
@@ -278,8 +250,7 @@
     showLoading();
     fetchConstants().then(() => {
         hideLoading();
-        generateHeaderTabs();
-        changeTab("home");
+        changeTab("profile");
         generateFrontPage();
     });
 </script>

@@ -3,29 +3,14 @@ let oak_token = ""
 let btd6usersave = {};
 let _btd6usersave = {};
 
-let btd6publicprofile = null;
-let _btd6publicprofile = null;
-
-let racesData = null;
-
-let leaderboardData = null;
-let leaderboardLink = null;
-let leaderboardPage = 1;
-let leaderboardPageEntryCount = null;
+let btd6publicprofile = true;
+let _btd6publicprofile = true;
 
 let localStorageOAK = {}
 
 let refreshRateLimited = false;
 
 let profileCache = {}
-
-let bossesData = null;
-
-let CTData = null;
-
-let DCData = null;
-
-let challengesCache = {}
 
 let browserData = null;
 let browserLink = null;
@@ -38,8 +23,6 @@ let cacheBust = false;
 
 let isErrorModalOpen = false;
 
-let customMapsCache = {}
-
 let rateLimited = false;
 let preventRateLimiting = false;
 
@@ -51,22 +34,6 @@ let lastResetTime = Date.now();
 
 let requestQueue = [];
 let isProcessing = false;
-
-let leaderboardCache = {};
-let leaderboardNext;
-let leaderboardMetadata = {};
-let leaderboardType;
-let leaderboardActiveToken = 0;
-
-let racesDataCachedAt = null;
-let bossesDataCachedAt = null;
-let CTDataCachedAt = null;
-let challengesDataCachedAt = null;
-let odysseyDataCachedAt = null;
-
-let odysseyData = null;
-
-let latestEvents = null;
 
 const TIMEOUT_TTL = 10 * 60 * 1000;
 
@@ -174,9 +141,7 @@ async function getSaveData(oak_token) {
         let elements = document.getElementsByClassName("error-modal-overlay");
         for(element of elements){
             element.parentNode.removeChild(element);
-        } 
-        delete localStorageOAK[oak_token];
-        writeLocalStorage();
+        }
         errorModal("Your Open Access Key has expired. Please make a new one and try again.", "expire", true)
         return;
     }
@@ -194,224 +159,8 @@ async function getPublicProfileData(oak_token) {
             "avatar": getProfileAvatar(btd6publicprofile),
             "banner": getProfileBanner(btd6publicprofile)
         }
-        writeLocalStorage()
         readyFlags[1] = 1
     });
-}
-
-async function getRogueSaveData(oak_token) {
-    cacheBust = true;
-    let expiryCheck = true;
-    let savePromise = new Promise(async (resolve, reject) => {
-        await fetchData(`https://data.ninjakiwi.com/btd6/save/${oak_token}`, (json) => {
-            if (json["body"].hasOwnProperty("rogueUnlockedStarterArtifacts")) {
-                if (!rogueSaveData.hasOwnProperty("extractedArtifacts")) {
-                    rogueSaveData.extractedArtifacts = []
-                }
-                if(!rogueSaveData.hasOwnProperty("monkeyManager")) {
-                    rogueSaveData.monkeyManager = []
-                }
-                if(!rogueSaveData.hasOwnProperty("oneForAll")) {
-                    rogueSaveData.oneForAll = []
-                }
-                Object.values(json["body"]["rogueUnlockedStarterArtifacts"]).forEach(artifact => {
-                    if (!rogueSaveData.extractedArtifacts.includes(artifact)) {
-                        rogueSaveData.extractedArtifacts.push(artifact);
-                    }
-                });
-                rogueSaveData.monkeyManager = json["body"].rogueLegendsStats?.tier5sAcrossAll || []
-                rogueSaveData.oneForAll = json["body"].rogueLegendsStats?.towerTypesPlaced || []
-            }
-            expiryCheck = false;
-            resolve();
-        });
-    });
-    await savePromise;
-    if(expiryCheck && !rateLimited){
-        let elements = document.getElementsByClassName("error-modal-overlay");
-        for(element of elements){
-            element.parentNode.removeChild(element);
-        } 
-        delete localStorageOAK[oak_token];
-        writeLocalStorage();
-        errorModal("Your Open Access Key has expired. Please make a new one and try again.", "expire", true)
-        return;
-    }
-    let profilePromise = new Promise(async (resolve, reject) => {
-        fetchData(`https://data.ninjakiwi.com/btd6/users/${oak_token}`, (json) => {
-            rogueSaveData.imageOptions.name = json["body"]["displayName"];
-            rogueSaveData.imageOptions.avatar = json["body"].avatar + ".png"
-            rogueSaveData.imageOptions.banner = json["body"].banner + ".png"
-            resolve();
-        });
-    });
-    await profilePromise;
-}
-
-async function getRacesData(dataOnly = false) {
-    if (racesData == null || isStale(racesDataCachedAt)) {
-        await fetchData(`https://data.ninjakiwi.com/btd6/races`, (json) => {
-            racesData = json["body"];
-            racesDataCachedAt = Date.now();
-            if (dataOnly) return;
-            generateRaces();
-        });
-    } else {
-        if (dataOnly) return;
-        generateRaces();
-    }
-    addToBackQueue({callback: generateEvents})
-}
-
-async function getRaceMetadata(key) {
-    if (racesData && racesData[key] && typeof racesData[key]["metadata"] === 'string') {
-        return fetchData(racesData[key]["metadata"], (json) => {
-            racesData[key]["metadata"] = json["body"];
-            return racesData[key];
-        });
-    } else {
-        return racesData[key];
-    }
-}
-
-async function getLeaderboardData() {
-    if (leaderboardLink) {
-        leaderboardData = null;
-        return fetchData(`${leaderboardLink}?page=${leaderboardPage}`, (json) => {
-            leaderboardData = json["body"];
-            leaderboardPageEntryCount = leaderboardData.length;
-            document.getElementById('leaderboard-footer-page-number').innerHTML = `Page ${leaderboardPage} (#${(leaderboardPage * leaderboardPageEntryCount) - (leaderboardPageEntryCount - 1)} - ${leaderboardPage * leaderboardPageEntryCount})`;
-            return leaderboardData;
-        });
-    } else {
-        return errorModal("Leaderboard Fetch Error: No leaderboard data found");
-    }
-}
-
-async function getAllLeaderboardData(link) {
-    if (link == null) { link = leaderboardLink };
-    requestQueue = [];
-    if (leaderboardCache[leaderboardLink] == null || (leaderboardCache[leaderboardLink]._cachedAt && Date.now() - leaderboardCache[leaderboardLink]._cachedAt > TIMEOUT_TTL)) {
-        leaderboardCache[leaderboardLink] = {
-            "entries": [],
-            _cachedAt: Date.now()
-        };
-        await getLeaderboardPage(link, leaderboardActiveToken, true);
-    }
-    return leaderboardCache[leaderboardLink];
-}
-
-async function getLeaderboardPage(link, token = leaderboardActiveToken, isInitialLoad = false) {
-    if (link == null) return;
-    if(leaderboardCache[leaderboardLink].nextRequested){ return };
-    requestCount++;
-    await fetchData(link, (json) => {
-        if (token !== leaderboardActiveToken) return;
-        leaderboardCache[leaderboardLink].entries = leaderboardCache[leaderboardLink].entries.concat(json["body"]);
-        leaderboardCache[leaderboardLink]._cachedAt = Date.now();
-        if(!leaderboardCache[leaderboardLink].hasOwnProperty("entryPerPage")){
-            leaderboardCache[leaderboardLink]["entryPerPage"] = json["body"].length;
-        }
-        leaderboardCache[leaderboardLink]["next"] = json["next"];
-        leaderboardCache[leaderboardLink].nextRequested = false;
-
-        if (!isInitialLoad && json["body"].length > 0) {
-            addLeaderboardEntries(json["body"], isNaN(link.split("=")[1]) ? 1 : parseInt(link.split("=")[1]), leaderboardCache[leaderboardLink]["entryPerPage"] ? leaderboardCache[leaderboardLink]["entryPerPage"] : json["body"].length);
-        }
-    });
-}
-
-async function getBossesData(dataOnly = false) {
-    if (bossesData == null || isStale(bossesDataCachedAt)) {
-        await fetchData(`https://data.ninjakiwi.com/btd6/bosses`, (json) => {
-            bossesData = json["body"];
-            bossesDataCachedAt = Date.now();
-            if (dataOnly) return;
-            generateBosses(showElite);
-        });
-    } else {
-        if (dataOnly) return;
-        generateBosses(showElite);
-    }
-    addToBackQueue({callback: generateEvents})
-}
-
-async function getBossMetadata(key, elite) {
-    if (bossesData && bossesData[key] && typeof bossesData[key][elite ? "metadataElite" : "metadataStandard"] === 'string') {
-        return fetchData(bossesData[key][elite ? "metadataElite" : "metadataStandard"], (json) => {
-            bossesData[key][elite ? "metadataElite" : "metadataStandard"] = json["body"];
-            return bossesData[key];
-        });
-    } else {
-        return bossesData[key];
-    }
-}
-
-async function getCTData(standalone, dataOnly = false) {
-    if (CTData == null || isStale(CTDataCachedAt)) {
-        await fetchData(`https://data.ninjakiwi.com/btd6/ct`, (json) => {
-            CTData = json["body"];
-            CTDataCachedAt = Date.now();
-            if (dataOnly) return;
-            generateCTs();
-        });
-    } else {
-        if (dataOnly) return;
-        generateCTs();
-    }
-    if (!standalone) { 
-        addToBackQueue({callback: generateEvents})
-    }
-}
-
-async function getCTTiles(key) {
-    let tiles = null;
-    await fetchData(key, (json) => {
-        tiles = json["body"];
-        return tiles;
-    });
-    return tiles
-}
-
-async function getDailyChallengesData() {
-    if (DCData == null || isStale(challengesDataCachedAt)) {
-        await fetchData(`https://data.ninjakiwi.com/btd6/challenges/filter/daily`, (json) => {
-            DCData = json["body"];
-            addToBackQueue({callback: generateEvents})
-            challengesDataCachedAt = Date.now();
-            return DCData;
-        });
-    } else {
-        addToBackQueue({callback: generateEvents})
-        return DCData;
-    }
-}
-
-async function getChallengeMetadata(challengeId) {
-    if (challengesCache[challengeId] == null || isStale(challengesCache[challengeId]._cachedAt)) {
-        await fetchData(`https://data.ninjakiwi.com/btd6/challenges/challenge/${challengeId}`, (json) => {
-            challengesCache[challengeId] = json["body"];
-            challengesCache[challengeId]._cachedAt = Date.now();
-            return challengesCache[challengeId];
-        });
-    } else {
-        // console.log(`used cache for ${challengeId}`)
-    }
-    return challengesCache[challengeId];
-}
-
-async function getBrowserData() {
-    if (browserLink) {
-        browserData = null;
-        return fetchData(`${browserLink}${browserFilter}?page=${browserPage}`, (json) => {
-            browserData = json["body"];
-            browserPageEntryCount = browserData.length;
-            document.getElementById('browser-footer-page-number').innerHTML = `Page ${browserPage} of 4`;
-            return leaderboardData;
-        });
-    } else {
-        return errorModal("Content Browser Fetch Error: No data found");
-    }
 }
 
 async function getUserProfile(key) {
@@ -426,171 +175,7 @@ async function getUserProfile(key) {
     return profileCache[player];
 }
 
-async function getCustomMapMetadata(mapId) {
-    if (customMapsCache[mapId] == null) {
-        await fetchData(`https://data.ninjakiwi.com/btd6/maps/map/${mapId}`, (json) => {
-            customMapsCache[mapId] = json["body"];
-            return customMapsCache[mapId];
-        });
-    } else {
-        // console.log(`used cache for ${mapId}`)
-    }
-    return customMapsCache[mapId];
-}
-
-async function getLatestEvents() {
-    if (latestEvents == null) {
-        await fetchData(`https://data.ninjakiwi.com/btd6/events`, (json) => {
-            latestEvents = json["body"];
-        });
-    }
-    return latestEvents;
-}
-
-async function getLatestCollectionEvent(id = null) {
-    let events = await getLatestEvents() || [];
-    events.sort((a, b) => a.start - b.start);
-    for (let event of events) {
-        if (event["type"] == "collectableEvent" && (Date.now() < event.end) && id == null) {
-            return event;
-        } else if (event["type"] == "collectableEvent" && event.id == id) {
-            return event;
-        }
-    }
-    // return {
-    //   "id": "testseed",
-    //   "start": 1767992460000,
-    //   "end": 1768446000000,
-    // }
-    // return {
-    //   "id": "mp07sijd",
-    //   "start": 1779528800000,
-    //   "end": 1779828800000,
-    // }
-    return null;
-}
-
-async function getOdysseyData(dataOnly = false) {
-    if (odysseyData == null || isStale(odysseyDataCachedAt)) {
-        await fetchData(`https://data.ninjakiwi.com/btd6/odyssey`, (json) => {
-            odysseyData = json["body"];
-            odysseyDataCachedAt = Date.now();
-            if (dataOnly) return;
-            generateOdyssey();
-        });
-    } else {
-        if (dataOnly) return;
-        generateOdyssey();
-    }
-    addToBackQueue({callback: generateEvents})
-}
-
-async function getOdyMetadata(key, difficulty, dataOnly = false) {
-    let metaKey = `metadata_${difficulty}`;
-
-    if (typeof odysseyData[key][metaKey] === 'string') {
-        await fetchData(odysseyData[key][metaKey], (json) => {
-            odysseyData[key][metaKey] = json["body"];
-        });
-    }
-
-    if (odysseyData[key][metaKey] && typeof odysseyData[key][metaKey] === 'object') {
-        if (typeof odysseyData[key][metaKey].maps === 'string') {
-            await fetchData(odysseyData[key][metaKey].maps, (json) => {
-                odysseyData[key][metaKey].maps = json["body"];
-            });
-        }
-    }
-    if (dataOnly) return;
-    showOdyssey(difficulty, odysseyData[key], odysseyData[key][metaKey]);
-    return odysseyData[key][metaKey];
-}
-
-function readLocalStorage(){
-    if(localStorage.getItem("BTD6OAKStorage") != null){
-        localStorageOAK = JSON.parse(localStorage.getItem("BTD6OAKStorage"))
-    }
-}
-function writeLocalStorage(){
-    localStorage.setItem("BTD6OAKStorage", JSON.stringify(localStorageOAK))
-}
-
-function challengeIdToDate(challengeId) {
-    //sample input: rot216320240713
-    //extract first 3 chars
-    let advanced = challengeId.substring(0, 3) == "adv";
-    //extract 4 digit numeric Id
-    let rawId = parseInt(challengeId.substring(3, 7));
-    //extract date
-    let date = challengeId.substring(7);
-    let year = parseInt(date.substring(0, 4));
-    let month = parseInt(date.substring(4, 6));
-    let day = parseInt(date.substring(6, 8));
-    return [year, month, day]
-}
-
-function getChallengeIdFromInt(rawId, advanced) {
-    let baseDate = new Date(2024, 4, 25); //0 indexed month
-    let diff = (advanced ? 2101 : 2114) - parseInt(rawId);
-    baseDate.setDate(baseDate.getDate() - diff);
-    let formattedDate = baseDate.toISOString().substring(0, 10).replace(/-/g, '');
-    return (advanced ? 'adv': 'rot') + rawId + formattedDate;
-}
-
-function getChallengeIDFromDate(date, advanced) {
-    let baseDate = new Date(date);
-    let diffInMs = new Date(2024, 4, 25).getTime() - baseDate.getTime();
-    let diffInDays = Math.floor(diffInMs / 86400000);
-    let diff = (advanced ? 2101 : 2114) - diffInDays;
-    return (advanced ? 'adv': 'rot') + diff + date.replace(/-/g, '');
-}
-
 function clearProfileRequestQueue() {
     requestQueue = [];
     isProcessing = false;
-}
-
-let externalCTData = {};
-let CTSeedToEventNumber = null;
-
-async function getCTSeedToEventNumber() {
-    if (!CTSeedToEventNumber) {
-        const eventToSeed = await fetch("https://storage.googleapis.com/btd6-ct-map/event-seeds.json").then(r => r.json());
-        const reversed = {};
-        for (const [eventId, s] of Object.entries(eventToSeed)) {
-            reversed[s] = parseInt(eventId, 10);
-        }
-        CTSeedToEventNumber = reversed;
-    }
-    return CTSeedToEventNumber;
-}
-
-async function getExternalCTData(seed) {
-    await getCTSeedToEventNumber();
-
-    const eventId = CTSeedToEventNumber[seed];
-    if (eventId == null) {
-        // console.log(`No event found for CT seed: ${seed}`);
-        return null;
-    }
-
-    if (!externalCTData[seed]) {
-        const base = `https://storage.googleapis.com/btd6-ct-map/events/${eventId}`;
-        const [tiles, daily_powers, event_relics] = await Promise.all([
-            fetch(`${base}/tiles.json`).then(r => r.json()),
-            fetch(`${base}/daily_powers.json`).then(r => r.json()),
-            fetch(`${base}/event_relics.json`).then(r => r.json()),
-        ]);
-
-        externalCTData[seed] = {
-            tiles,
-            daily_powers,
-            event_relics,
-            eventId: eventId,
-            seed: seed,
-            _cachedAt: Date.now()
-        };
-    }
-
-    return externalCTData[seed];
 }
