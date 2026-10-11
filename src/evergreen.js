@@ -263,7 +263,7 @@ function ratioCalc(unknown, x1, x2, y1, y2){
 function generateLoginDiv(callback, loginCallback) {
     async function autoStart() {
         document.getElementById("loading").style.removeProperty("transform");
-        oak_token = 'oak_9e456ba4b9aeaf59d83c';
+        oak_token = 'oak_1b39e9f701449ceb00cf';
     
         if (loginCallback) {
             await loginCallback(oak_token);
@@ -375,4 +375,30 @@ function errorModal(body, source, force) {
     })
     modalContent.appendChild(modalClose);
     isErrorModalOpen = true;
+}
+
+function generateComment(text, callback) {
+    let commentDiv = createEl('div', {
+        classList: ['round-hint-div','coop-border']
+    });
+
+    let closeBtn = createEl('p', {
+        classList: ['round-hint-x', 'white-outline'],
+        innerHTML: 'X'
+    });
+    closeBtn.addEventListener('click', () => {
+        commentDiv.style.display = "none";
+        if (callback) {
+            callback();
+        }   
+    })
+    commentDiv.appendChild(closeBtn);
+
+    let commentText = createEl('p', {
+        classList: ['round-hint'],
+        innerHTML: text
+    });
+    commentDiv.appendChild(commentText);
+
+    return commentDiv;
 }
